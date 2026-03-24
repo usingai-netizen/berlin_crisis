@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>逃離東德 Escape from East Germany</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&amp;family=Roboto:wght@400;700&amp;display=swap');
+        
+        :root {
+            --bg: #1a1a2e;
+            --text: #e0e0e0;
+            --accent: #c0392b;
+            --success: #27ae60;
+            --danger: #c0392b;
+        }
+        
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+        }
+        
+        header {
+            background: rgba(0,0,0,0.8);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--accent);
+            position: sticky; top: 0; z-index: 100;
+        }
+        
+        .title { font-size: 1.35rem; font-weight: 700; color: white; }
+        
+        .lang-btn {
+            background: #2c3e50; color: white; border: none;
+            padding: 8px 16px; border-radius: 20px;
+            font-size: 0.95rem; cursor: pointer;
+        }
+        .lang-btn.active { background: var(--accent); transform: scale(1.05); }
+        
+        #game-container {
+            flex: 1; padding: 16px; max-width: 640px; margin: 0 auto; width: 100%; box-sizing: border-box;
+        }
+        
+        #story {
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px; padding: 20px; margin-bottom: 20px;
+            line-height: 1.65; font-size: 1.05rem;
+            border: 2px solid #34495e; box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            min-height: 260px;
+        }
+        
+        .danger-box {
+            background: #c0392b; color: white; padding: 10px 14px;
+            border-radius: 10px; margin: 12px 0; font-size: 0.95rem;
+            border-left: 6px solid #f1c40f;
+        }
+        
+        #choices { display: flex; flex-direction: column; gap: 12px; }
+        
+        .choice-btn {
+            background: #2c3e50; color: white; border: none;
+            padding: 18px 20px; font-size: 1.1rem;
+            border-radius: 12px; text-align: left;
+            cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .choice-btn:hover { background: #34495e; transform: translateY(-3px); }
+        
+        .ending { font-size: 1.3rem; text-align: center; padding: 30px 20px; border-radius: 16px; margin: 20px 0; }
+        .success { background: rgba(39,174,96,0.2); border: 4px solid var(--success); color: #2ecc71; }
+        .fail { background: rgba(192,57,43,0.2); border: 4px solid var(--danger); color: #e74c3c; }
+        
+        .fact { background: #34495e; padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-top: 20px; border-left: 6px solid #f1c40f; }
+        
+        footer { text-align: center; padding: 16px; font-size: 0.85rem; color: #7f8c8e; background: rgba(0,0,0,0.6); }
+        
+        .restart-btn, .all-btn {
+            background: #f1c40f; color: #2c3e50; font-weight: 700;
+            padding: 14px 32px; border-radius: 30px; border: none;
+            font-size: 1.1rem; margin: 12px auto 0; display: block;
+            cursor: pointer;
+        }
+        
+        #modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 300; align-items: center; justify-content: center;
+        }
+        #modal-content {
+            background: #16213e; padding: 24px; border-radius: 16px;
+            max-width: 90%; max-height: 85vh; overflow-y: auto; width: 620px;
+        }
+        .ending-item {
+            background: rgba(255,255,255,0.08); margin-bottom: 12px; padding: 14px;
+            border-radius: 12px; border-left: 5px solid #f1c40f;
+        }
+        
+        @media (max-width: 480px) {
+            #story { padding: 16px; font-size: 1rem; }
+            .choice-btn { padding: 16px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="title">逃離東德<br><span style="font-size:0.85rem;opacity:0.85;">Escape from East Germany</span></div>
+        <div>
+            <button onclick="switchLang('zh')" id="btn-zh" class="lang-btn active">繁體中文</button>
+            <button onclick="switchLang('en')" id="btn-en" class="lang-btn">English</button>
+        </div>
+    </header>
+    
+    <div id="game-container">
+        <div id="story"></div>
+        <div id="choices"></div>
+    </div>
+    
+    <footer>
+        中三歷史互動遊戲｜柏林牆時期（1961-1989）<br>
+        Form 3 History Game | Berlin Wall Era
+    </footer>
+
+    <!-- 所有結局 Modal -->
+    <div id="modal">
+        <div id="modal-content">
+            <h2 style="text-align:center;margin-bottom:16px;">所有結局 All Possible Endings</h2>
+            <div id="endings-list"></div>
+            <button onclick="closeModal()" style="width:100%;padding:14px;background:#c0392b;color:white;border:none;border-radius:12px;font-size:1.1rem;margin-top:16px;">關閉 Close</button>
+        </div>
+    </div>
+
+    <script>
+        let currentLang = 'zh';
+        let currentSceneKey = 'start';
+        let currentMethod = '';
+        let safeCount = 0;
+
+        const gameData = {
+            zh: {
+                start: {
+                    body: "你是東德柏林的一位普通中學生。1961年柏林牆建成後，東德守衛有命令「開槍殺人」阻止逃亡。柏林牆有「死亡地帶」（地雷、軍犬、機槍）。你決定冒生命危險逃到西德。\n\n歷史小知識：28年間至少136人被打死，超過5000人成功逃脫。你選擇哪種方法？",
+                    choices: [
+                        { text: "挖地下隧道", next: "stasi_check", method: "tunnel" },
+                        { text: "自製熱氣球", next: "stasi_check", method: "balloon" },
+                        { text: "偷坦克或開車衝撞", next: "stasi_check", method: "car" },
+                        { text: "從大樓跳下", next: "stasi_check", method: "jump" }
+                    ]
+                },
+                stasi_check: {
+                    body: "東德有秘密警察（Stasi 秘密警察）監視每個人，一句話說錯就會被捕。你要小心計劃還是冒險快點行動？",
+                    choices: [
+                        { text: "只告訴最信任的朋友", next: "prep", isSafe: true },
+                        { text: "告訴鄰居幫忙", next: "prep", isSafe: false },
+                        { text: "完全獨自計劃", next: "prep", isSafe: true }
+                    ]
+                },
+                prep: {
+                    body: "你已經選好方法。現在要準備工具，但東德邊防軍24小時巡邏，任何聲音都可能引來機槍。",
+                    choices: [
+                        { text: "晚上用可靠材料準備", next: "final_challenge", isSafe: true },
+                        { text: "白天用簡單東西準備", next: "final_challenge", isSafe: false },
+                        { text: "利用黑市購買材料夜間運送", next: "final_challenge", isSafe: true }
+                    ]
+                },
+                final_challenge: {
+                    body: "",
+                    choices: [
+                        { text: "等待最安全時刻", isFinalSafe: true },
+                        { text: "馬上衝出去", isFinalSafe: false },
+                        { text: "先分散守衛注意力", isFinalSafe: false }
+                    ]
+                },
+                tunnel_success: { body: "✅ 成功！你挖的145米地道（像真實57號地道）讓你和朋友安全到西柏林！\n\n歷史：57位東德人成功逃脫。", isEnd: true, success: true },
+                balloon_success: { body: "✅ 成功！熱氣球升到2800米高，避開警察和蘇聯戰機，28分鐘後安全降落西德！\n\n歷史：1979年兩個家庭共8人用自製熱氣球逃亡（拍成電影）。", isEnd: true, success: true },
+                car_success: { body: "✅ 成功！你偷坦克全速衝破圍牆！雖然受傷，但你自由了！\n\n歷史：1963年士兵Wolfgang Engels用坦克成功逃脫。", isEnd: true, success: true },
+                jump_success: { body: "✅ 成功！西柏林親友用床單接住你！你安全落地！\n\n歷史：很多東德人從大樓跳下，甚至77歲老太太也成功。", isEnd: true, success: true },
+                tunnel_fail: { body: "❌ 失敗！地道被Stasi發現，你被捕送監獄。很多地道因為不夠小心而失敗。\n\n歷史：東德守衛用軍犬和探測器找到地道。", isEnd: true, success: false },
+                balloon_fail: { body: "❌ 失敗！警察發現熱氣球，你和家人被捕。\n\n歷史：東德政府嚴密監視任何奇怪活動。", isEnd: true, success: false },
+                car_fail: { body: "❌ 失敗！車被機槍掃射，你身中多彈死在車上。\n\n歷史：1961年有人開大客車衝牆，身中19彈犧牲。", isEnd: true, success: false },
+                jump_fail: { body: "❌ 失敗！警察衝進大樓，你跳下時被射殺。\n\n歷史：1962年18歲Peter Fechter在牆頭被打死，西方記者親眼看到。", isEnd: true, success: false }
+            },
+            en: {
+                start: {
+                    body: "You are a normal secondary school student in East Berlin. After the Berlin Wall was built in 1961, guards had orders to \"shoot to kill\". The Wall had a \"death strip\" (mines, dogs, machine guns). You decide to risk your life to escape to West Germany.\n\nHistory fact: In 28 years, at least 136 people were shot dead. Over 5,000 succeeded. Which way will you try?",
+                    choices: [
+                        { text: "Dig an underground tunnel", next: "stasi_check", method: "tunnel" },
+                        { text: "Build a hot-air balloon (熱氣球)", next: "stasi_check", method: "balloon" },
+                        { text: "Steal a tank or ram with a car", next: "stasi_check", method: "car" },
+                        { text: "Jump from a building next to the Wall", next: "stasi_check", method: "jump" }
+                    ]
+                },
+                stasi_check: {
+                    body: "East Germany had secret police (Stasi 秘密警察) watching everyone. One wrong word and you are arrested! Will you plan carefully or rush?",
+                    choices: [
+                        { text: "Only tell your most trusted friends", next: "prep", isSafe: true },
+                        { text: "Tell neighbours to help", next: "prep", isSafe: false },
+                        { text: "Plan completely alone", next: "prep", isSafe: true }
+                    ]
+                },
+                prep: {
+                    body: "You have chosen your method. Now prepare tools, but East German guards patrol 24 hours. Any noise can bring machine guns.",
+                    choices: [
+                        { text: "Prepare at night with reliable materials", next: "final_challenge", isSafe: true },
+                        { text: "Prepare in daytime with simple things", next: "final_challenge", isSafe: false },
+                        { text: "Buy materials on the black market and transport at night", next: "final_challenge", isSafe: true }
+                    ]
+                },
+                final_challenge: {
+                    body: "",
+                    choices: [
+                        { text: "Wait for the safest moment", isFinalSafe: true },
+                        { text: "Rush out immediately", isFinalSafe: false },
+                        { text: "Distract the guards first", isFinalSafe: false }
+                    ]
+                },
+                tunnel_success: { body: "✅ SUCCESS! Your 145-metre tunnel (like real Tunnel 57) lets you and friends reach West Berlin safely!\n\nHistory: 57 East Germans escaped this way.", isEnd: true, success: true },
+                balloon_success: { body: "✅ SUCCESS! Your hot-air balloon (熱氣球) rises to 2,800 metres, avoids police and Soviet jets, and lands safely in West Germany in 28 minutes!\n\nHistory: In 1979, two families (8 people) escaped this way (made into a movie).", isEnd: true, success: true },
+                car_success: { body: "✅ SUCCESS! You steal a tank and crash through the Wall at full speed! You are hurt but free!\n\nHistory: In 1963, soldier Wolfgang Engels escaped with a stolen tank.", isEnd: true, success: true },
+                jump_success: { body: "✅ SUCCESS! West Berlin friends catch you with sheets! You land safely!\n\nHistory: Many jumped from buildings – even a 77-year-old grandmother succeeded.", isEnd: true, success: true },
+                tunnel_fail: { body: "❌ FAILURE! The Stasi (秘密警察) finds your tunnel. You are arrested and sent to prison.\n\nHistory: Guards used dogs and detectors to find tunnels.", isEnd: true, success: false },
+                balloon_fail: { body: "❌ FAILURE! Police see your hot-air balloon (熱氣球). You and your family are arrested.\n\nHistory: East Germany watched every strange activity.", isEnd: true, success: false },
+                car_fail: { body: "❌ FAILURE! The car is shot by many bullets. You die at the wheel.\n\nHistory: In 1961, a driver was hit by 19 bullets trying to ram the Wall.", isEnd: true, success: false },
+                jump_fail: { body: "❌ FAILURE! Police rush into the building and shoot you while jumping.\n\nHistory: In 1962, 18-year-old Peter Fechter was shot dead on the Wall – Western reporters saw it.", isEnd: true, success: false }
+            }
+        };
+
+        function getFinalBody(lang, method, safeCountNow) {
+            let dangerText = lang === 'zh' 
+                ? "最後一刻！東德守衛有機槍、軍犬和地雷。你已經小心了" 
+                : "Final moment! East German guards have machine guns, dogs and mines. You have been careful so far";
+            
+            if (safeCountNow < 2) {
+                dangerText += lang === 'zh' ? "，但前面兩步太危險！" : ", but your first two steps were too dangerous!";
+            }
+            
+            let question = lang === 'zh' ? "現在你選擇：" : "Now you choose:";
+            
+            return dangerText + "\n\n" + question;
+        }
+
+        function render() {
+            const data = gameData[currentLang];
+            let scene = data[currentSceneKey] || { body: "Error" };
+
+            const storyDiv = document.getElementById('story');
+            let displayBody = scene.body;
+
+            if (currentSceneKey === 'final_challenge') {
+                displayBody = getFinalBody(currentLang, currentMethod, safeCount);
+            }
+
+            storyDiv.innerHTML = `<p>${displayBody.replace(/\n/g, '<br>')}</p>`;
+
+            if (!scene.isEnd) {
+                const dangerHTML = currentLang === 'zh' 
+                    ? `<div class="danger-box">⚠️ 危險提醒：東德守衛可以隨時開槍！Stasi秘密警察監視所有人，一步錯就死！</div>`
+                    : `<div class="danger-box">⚠️ Danger reminder: East German guards can shoot anytime! Stasi (秘密警察) watches everyone. One mistake = death!</div>`;
+                storyDiv.innerHTML += dangerHTML;
+            }
+
+            if (scene.isEnd) {
+                storyDiv.className = scene.success ? 'ending success' : 'ending fail';
+                const factHTML = scene.success 
+                    ? `<div class="fact">${currentLang==='zh'?'恭喜！你成功逃脫！歷史上超過5000人靠小心計劃逃出。':'Congratulations! You escaped! Over 5,000 people succeeded with careful planning.'}</div>`
+                    : `<div class="fact">${currentLang==='zh'?'可惜…東德邊防非常嚴密，至少136人死在柏林牆前。':'Sadly… East German border was very strict. At least 136 died at the Wall.'}</div>`;
+                storyDiv.innerHTML += factHTML;
+            } else {
+                storyDiv.className = '';
+            }
+
+            const choicesDiv = document.getElementById('choices');
+            choicesDiv.innerHTML = '';
+
+            if (scene.isEnd) {
+                const restartBtn = document.createElement('button');
+                restartBtn.textContent = currentLang === 'zh' ? '重新開始 Restart' : 'Restart';
+                restartBtn.className = 'restart-btn';
+                restartBtn.onclick = resetGame;
+                choicesDiv.appendChild(restartBtn);
+
+                const allBtn = document.createElement('button');
+                allBtn.textContent = currentLang === 'zh' ? '查看所有結局 View All Endings' : 'View All Endings';
+                allBtn.className = 'all-btn';
+                allBtn.style.background = '#3498db';
+                allBtn.onclick = showAllEndings;
+                choicesDiv.appendChild(allBtn);
+            } else {
+                scene.choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.textContent = choice.text;
+                    btn.onclick = () => handleChoice(choice);
+                    choicesDiv.appendChild(btn);
+                });
+            }
+        }
+
+        function handleChoice(choice) {
+            if (choice.method) currentMethod = choice.method;
+            if (choice.isSafe === true) safeCount++;
+            if (choice.isSafe === false) safeCount = Math.max(0, safeCount);
+
+            if (choice.isFinalSafe !== undefined) {
+                const isSuccess = (safeCount >= 2) && choice.isFinalSafe;
+                currentSceneKey = `${currentMethod}_${isSuccess ? 'success' : 'fail'}`;
+            } else {
+                currentSceneKey = choice.next;
+            }
+            render();
+        }
+
+        function resetGame() {
+            currentSceneKey = 'start';
+            currentMethod = '';
+            safeCount = 0;
+            document.getElementById('story').className = '';
+            render();
+        }
+
+        function switchLang(lang) {
+            currentLang = lang;
+            document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
+            document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+            render();
+        }
+
+        function showAllEndings() {
+            const listDiv = document.getElementById('endings-list');
+            listDiv.innerHTML = '';
+            const endings = [
+                {title: currentLang==='zh'?'地道成功':'Tunnel Success', desc: gameData[currentLang].tunnel_success.body},
+                {title: currentLang==='zh'?'地道失敗':'Tunnel Failure', desc: gameData[currentLang].tunnel_fail.body},
+                {title: currentLang==='zh'?'熱氣球成功':'Balloon Success', desc: gameData[currentLang].balloon_success.body},
+                {title: currentLang==='zh'?'熱氣球失敗':'Balloon Failure', desc: gameData[currentLang].balloon_fail.body},
+                {title: currentLang==='zh'?'坦克衝撞成功':'Tank Success', desc: gameData[currentLang].car_success.body},
+                {title: currentLang==='zh'?'衝撞失敗':'Ram Failure', desc: gameData[currentLang].car_fail.body},
+                {title: currentLang==='zh'?'跳樓成功':'Jump Success', desc: gameData[currentLang].jump_success.body},
+                {title: currentLang==='zh'?'跳樓失敗':'Jump Failure', desc: gameData[currentLang].jump_fail.body}
+            ];
+            endings.forEach(e => {
+                const div = document.createElement('div');
+                div.className = 'ending-item';
+                div.innerHTML = `<strong>${e.title}</strong><br>${e.desc}`;
+                listDiv.appendChild(div);
+            });
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        window.onload = () => render();
+    </script>
+</body>
+</html>
